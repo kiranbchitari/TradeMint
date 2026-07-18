@@ -1,0 +1,14 @@
+import { cache } from "react";
+
+import { createClient } from "@/lib/supabase/server";
+import type { Strategy } from "@/types/models";
+
+export const getStrategies = cache(async (): Promise<Strategy[]> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("strategies")
+    .select("*")
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+});

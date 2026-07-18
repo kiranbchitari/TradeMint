@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TradeMint
 
-## Getting Started
+A premium trading journal — log trades, review performance, and build discipline.
+Built with Next.js 16 (App Router), TypeScript, Tailwind v4, shadcn/ui, Supabase, TanStack Table/Query, Recharts, and TradingView Lightweight Charts.
 
-First, run the development server:
+## Features
+
+- **Auth** — email + Google, forgot/reset password, protected routes (Supabase SSR + middleware)
+- **Dashboard** — KPIs, equity curve, P&L calendar heatmap, recent trades, top strategies, mistakes
+- **Journal** — powerful TanStack table (sort/filter/search/columns/bulk actions), CSV import & export
+- **Trade details** — price chart, screenshots, timeline, metrics, journal, AI-review placeholder
+- **Analytics** — equity, drawdown, R-distribution, win/loss, weekday/hour/strategy/monthly breakdowns
+- **Calendar, Strategies, Playbook, Notes (markdown), Tags, Reports (print-to-PDF), Settings**
+- Command palette (⌘K), keyboard shortcuts (N / D / J), dark & light themes
+
+## Local development
 
 ```bash
+npm install
+cp .env.example .env.local   # fill in your Supabase values
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Environment variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Variable | Required | Notes |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | ✅ | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ | Publishable/anon key |
+| `NEXT_PUBLIC_SITE_URL` | recommended | Public base URL for auth redirects (falls back to `VERCEL_URL` in prod) |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Supabase setup
 
-## Learn More
+The database schema, RLS policies and storage buckets are managed via migrations
+(already applied to the linked project). In the Supabase dashboard:
 
-To learn more about Next.js, take a look at the following resources:
+1. **Authentication → URL Configuration**: set the Site URL and add `<your-url>/**` to redirect URLs.
+2. *(optional)* Enable the **Google** provider.
+3. For quick local testing you can disable email confirmation under **Auth → Providers → Email**.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Once signed in, use **Load demo data** on the empty dashboard to seed sample trades.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deploying to Vercel
 
-## Deploy on Vercel
+1. Push this repo to GitHub and import it in Vercel (framework auto-detected as Next.js).
+2. Add the environment variables above in **Project → Settings → Environment Variables**
+   (all environments). `NEXT_PUBLIC_*` vars must be present at build time.
+3. Set `NEXT_PUBLIC_SITE_URL` to your production URL, and add that URL (with `/**`)
+   to Supabase's allowed redirect URLs.
+4. Deploy. Build command `next build` and output are the Vercel defaults.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run dev     # start dev server
+npm run build   # production build
+npm run start   # run the production build
+npm run lint    # eslint
+```
