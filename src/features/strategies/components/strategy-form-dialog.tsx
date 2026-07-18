@@ -120,7 +120,7 @@ export function StrategyFormDialog({
                   type="button"
                   onClick={() => setColor(c)}
                   className={cn(
-                    "size-7 rounded-full ring-offset-2 ring-offset-background transition-all",
+                    "size-8 rounded-full ring-offset-2 ring-offset-background transition-all",
                     color === c && "ring-2 ring-foreground",
                   )}
                   style={{ backgroundColor: c }}

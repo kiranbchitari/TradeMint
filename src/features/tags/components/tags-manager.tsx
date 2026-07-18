@@ -32,7 +32,7 @@ function ColorPicker({
           type="button"
           onClick={() => onChange(c)}
           className={cn(
-            "size-6 rounded-full ring-offset-2 ring-offset-background",
+            "size-8 rounded-full ring-offset-2 ring-offset-background",
             value === c && "ring-2 ring-foreground",
           )}
           style={{ backgroundColor: c }}
