@@ -8,6 +8,7 @@ import { ArrowLeft, ImageIcon } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/page-header";
 import { SectionCard } from "@/components/section-card";
+import { SymbolIcon } from "@/components/symbol-icon";
 import { Badge } from "@/components/ui/badge";
 import { getUserCurrency } from "@/features/auth/queries";
 import { AiPlaceholderCard } from "@/features/ai/components/ai-placeholder-card";
@@ -91,20 +92,28 @@ export default async function TradeDetailPage({
       </Link>
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {trade.symbol}
-            </h1>
-            <DirectionBadge direction={trade.direction} />
-            <StatusBadge status={trade.status} />
-            <GradeBadge grade={trade.grade} />
+        <div className="flex items-start gap-3.5">
+          <SymbolIcon
+            symbol={trade.symbol}
+            market={trade.market}
+            size="xl"
+            className="mt-0.5"
+          />
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-2xl font-semibold tracking-tight">
+                {trade.symbol}
+              </h1>
+              <DirectionBadge direction={trade.direction} />
+              <StatusBadge status={trade.status} />
+              <GradeBadge grade={trade.grade} />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {formatDateTime(trade.entry_at)}
+              {trade.strategy?.name ? ` · ${trade.strategy.name}` : ""}
+              {trade.account?.name ? ` · ${trade.account.name}` : ""}
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            {formatDateTime(trade.entry_at)}
-            {trade.strategy?.name ? ` · ${trade.strategy.name}` : ""}
-            {trade.account?.name ? ` · ${trade.account.name}` : ""}
-          </p>
         </div>
         <TradeDetailActions trade={trade} />
       </div>

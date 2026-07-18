@@ -25,6 +25,7 @@ import { MonthCalendar } from "@/features/calendar/components/month-calendar";
 import { DashboardKpis } from "@/features/dashboard/components/dashboard-kpis";
 import { RecentNotesCard } from "@/features/dashboard/components/recent-notes-card";
 import { RecentTradesCard } from "@/features/dashboard/components/recent-trades-card";
+import { TopInstrumentsCard } from "@/features/dashboard/components/top-instruments-card";
 import { TopMistakesCard } from "@/features/dashboard/components/top-mistakes-card";
 import { TopStrategiesCard } from "@/features/dashboard/components/top-strategies-card";
 import { SeedDemoButton } from "@/features/dev/components/seed-demo-button";
@@ -138,6 +139,7 @@ export default async function DashboardPage() {
             <RecentTradesCard trades={trades.slice(0, 6)} currency={currency} />
           </div>
           <div className="space-y-4">
+            <TopInstrumentsCard trades={trades} currency={currency} />
             <TopMistakesCard trades={trades} />
             <RecentNotesCard notes={notes} />
           </div>

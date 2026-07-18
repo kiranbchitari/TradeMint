@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { SectionCard } from "@/components/section-card";
 import { StatCard } from "@/components/stat-card";
+import { SymbolIcon } from "@/components/symbol-icon";
 import { Button } from "@/components/ui/button";
 import { getUserCurrency } from "@/features/auth/queries";
 import { pnlByDay } from "@/features/analytics/metrics";
@@ -135,6 +136,11 @@ export default async function CalendarPage({
                       href={`/trades/${t.id}`}
                       className="flex items-center gap-2 rounded-lg px-2 py-2 transition-colors hover:bg-muted/50"
                     >
+                      <SymbolIcon
+                        symbol={t.symbol}
+                        market={t.market}
+                        size="sm"
+                      />
                       <span className="font-medium">{t.symbol}</span>
                       <DirectionBadge direction={t.direction} />
                       <PnlText

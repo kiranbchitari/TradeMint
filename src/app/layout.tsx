@@ -31,7 +31,6 @@ export const metadata: Metadata = {
     "trading analytics",
     "P&L tracker",
   ],
-  icons: { icon: "/favicon.ico" },
 };
 
 export default function RootLayout({

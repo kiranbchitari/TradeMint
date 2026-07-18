@@ -41,7 +41,7 @@ function mapToInsert(v: TradeFormOutput, userId: string): TradeInsert {
     broker_id: v.brokerId ?? null,
     strategy_id: v.strategyId ?? null,
     entry_price: v.entryPrice,
-    exit_price: v.status === "closed" ? (v.exitPrice ?? null) : (v.exitPrice ?? null),
+    exit_price: v.exitPrice ?? null,
     stop_loss: v.stopLoss ?? null,
     target_price: v.targetPrice ?? null,
     quantity: v.quantity,

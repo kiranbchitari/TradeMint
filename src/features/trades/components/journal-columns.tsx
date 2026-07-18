@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { SymbolIcon } from "@/components/symbol-icon";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -102,9 +103,14 @@ export function createTradeColumns({
       cell: ({ row }) => (
         <Link
           href={`/trades/${row.original.id}`}
-          className="font-medium hover:underline"
+          className="group flex items-center gap-2.5 font-medium"
         >
-          {row.original.symbol}
+          <SymbolIcon
+            symbol={row.original.symbol}
+            market={row.original.market}
+            size="md"
+          />
+          <span className="group-hover:underline">{row.original.symbol}</span>
         </Link>
       ),
     },
