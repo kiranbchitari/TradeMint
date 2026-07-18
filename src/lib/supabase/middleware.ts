@@ -19,6 +19,17 @@ const AUTH_PREFIXES = ["/login", "/register", "/forgot-password"];
 const startsWithAny = (pathname: string, prefixes: string[]) =>
   prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
+/** Friendly copy for auth-redirect error codes appended by Supabase. */
+function authErrorMessage(code: string, description: string | null): string {
+  if (code === "otp_expired" || code === "access_denied") {
+    return "Your email link has expired or was already used. Please request a new one.";
+  }
+  return (
+    description?.replace(/\+/g, " ") ??
+    "Could not complete sign-in. Please try again."
+  );
+}
+
 /**
  * Refreshes the Supabase auth session on every request and enforces
  * route protection. Must run in middleware so Server Components always
@@ -55,9 +66,30 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
+  const { pathname, searchParams } = request.nextUrl;
   const isPublic = startsWithAny(pathname, PUBLIC_PREFIXES);
   const isAuthPage = startsWithAny(pathname, AUTH_PREFIXES);
+
+  // A failed/expired email link or OAuth redirect lands back on the app
+  // (usually the Site URL root) with error params. Surface a friendly message
+  // on the login screen instead of a blank bounce to /login.
+  const errorCode = searchParams.get("error_code");
+  const errorParam = searchParams.get("error");
+  const isAuthRedirectError =
+    !!errorCode || errorParam === "access_denied" || errorParam === "server_error";
+  if (isAuthRedirectError && !isPublic) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = "";
+    url.searchParams.set(
+      "error",
+      authErrorMessage(
+        errorCode ?? errorParam ?? "",
+        searchParams.get("error_description"),
+      ),
+    );
+    return NextResponse.redirect(url);
+  }
 
   // Unauthenticated user hitting a protected route → send to login.
   if (!user && !isPublic) {
