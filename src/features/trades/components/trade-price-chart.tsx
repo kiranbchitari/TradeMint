@@ -75,7 +75,7 @@ export function TradePriceChart({ symbol, market }: Props) {
 
   if (!tvSymbol) {
     return (
-      <div className="flex h-[420px] w-full items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+      <div className="flex h-[460px] w-full items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground sm:h-[600px]">
         No symbol to chart.
       </div>
     );
@@ -84,7 +84,7 @@ export function TradePriceChart({ symbol, market }: Props) {
   return (
     <div
       ref={ref}
-      className="tradingview-widget-container h-[420px] w-full overflow-hidden rounded-lg"
+      className="tradingview-widget-container h-[460px] w-full overflow-hidden rounded-lg sm:h-[600px]"
     />
   );
 }
