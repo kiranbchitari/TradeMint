@@ -5,7 +5,7 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { format as formatDate, parseISO } from "date-fns";
-import { ImagePlus, Loader2, X } from "lucide-react";
+import { ClipboardPaste, ImagePlus, Loader2, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -189,15 +189,56 @@ export function TradeFormDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, trade?.id]);
 
-  function onPickFiles(list: FileList | null) {
-    if (!list) return;
-    const picked = Array.from(list).slice(0, 8);
-    setFiles((prev) => [...prev, ...picked]);
+  const addFiles = React.useCallback((incoming: File[]) => {
+    const images = incoming.filter((f) => f.type.startsWith("image/"));
+    if (images.length === 0) return;
+    const capped = images.slice(0, 8);
+    setFiles((prev) => [...prev, ...capped]);
     setPreviews((prev) => [
       ...prev,
-      ...picked.map((f) => URL.createObjectURL(f)),
+      ...capped.map((f) => URL.createObjectURL(f)),
     ]);
+  }, []);
+
+  function onPickFiles(list: FileList | null) {
+    if (!list) return;
+    addFiles(Array.from(list));
   }
+
+  // Paste screenshots from the clipboard (Ctrl/⌘+V) anywhere in the dialog.
+  React.useEffect(() => {
+    if (!open) return;
+    function onPaste(e: ClipboardEvent) {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      const pasted: File[] = [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.kind === "file" && item.type.startsWith("image/")) {
+          const blob = item.getAsFile();
+          if (blob) {
+            const ext = (blob.type.split("/")[1] || "png").replace("jpeg", "jpg");
+            pasted.push(
+              new File([blob], `screenshot-${Date.now()}-${pasted.length}.${ext}`, {
+                type: blob.type,
+              }),
+            );
+          }
+        }
+      }
+      if (pasted.length > 0) {
+        e.preventDefault();
+        addFiles(pasted);
+        toast.success(
+          pasted.length === 1
+            ? "Screenshot pasted"
+            : `${pasted.length} screenshots pasted`,
+        );
+      }
+    }
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, [open, addFiles]);
 
   function removeNewFile(idx: number) {
     setFiles((prev) => prev.filter((_, i) => i !== idx));
@@ -711,6 +752,13 @@ export function TradeFormDialog({
                     />
                   </label>
                 </div>
+                <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <ClipboardPaste className="size-3.5" />
+                  Paste a screenshot with{" "}
+                  <kbd className="rounded border bg-muted px-1 font-mono text-[10px]">
+                    Ctrl/⌘ + V
+                  </kbd>
+                </p>
               </div>
 
               <SectionTitle>Journal</SectionTitle>

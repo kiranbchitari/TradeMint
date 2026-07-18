@@ -17,7 +17,15 @@ export async function uploadTradeImages(
 
   const results: { path: string }[] = [];
   for (const file of files) {
-    const ext = file.name.split(".").pop() ?? "png";
+    // Derive a sane extension: prefer the filename's, else the MIME subtype,
+    // else png. Pasted clipboard blobs often have no usable filename.
+    const nameExt = file.name.includes(".")
+      ? file.name.split(".").pop()!.toLowerCase()
+      : "";
+    const ext =
+      nameExt && nameExt.length <= 5
+        ? nameExt
+        : (file.type.split("/")[1] || "png").toLowerCase();
     const path = `${user.id}/${tradeId}/${crypto.randomUUID()}.${ext}`;
     const { error } = await supabase.storage
       .from(STORAGE_BUCKETS.tradeImages)
