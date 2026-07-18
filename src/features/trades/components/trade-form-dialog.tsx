@@ -753,7 +753,7 @@ export function TradeFormDialog({
                       <button
                         type="button"
                         onClick={() => removeNewFile(i)}
-                        className="absolute top-0.5 right-0.5 rounded-full bg-background/80 p-0.5 text-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                        className="absolute top-0.5 right-0.5 rounded-full bg-background/80 p-0.5 text-foreground opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                       >
                         <X className="size-3.5" />
                       </button>

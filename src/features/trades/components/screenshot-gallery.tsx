@@ -35,7 +35,7 @@ export function ScreenshotGallery({
         open={active !== null}
         onOpenChange={(o) => !o && setActive(null)}
       >
-        <DialogContent className="max-w-4xl p-2">
+        <DialogContent className="w-[calc(100%-2rem)] max-w-4xl p-2">
           <DialogTitle className="sr-only">Screenshot</DialogTitle>
           {active !== null && (
             <>

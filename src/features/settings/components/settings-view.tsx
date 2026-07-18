@@ -149,7 +149,7 @@ export function SettingsView({
               className="h-9"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label>Currency</Label>
               <Select value={currency} onValueChange={setCurrency}>
@@ -225,7 +225,7 @@ export function SettingsView({
       {/* Risk */}
       <SectionCard title="Risk management">
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label>Default risk / trade</Label>
               <Input
@@ -354,7 +354,7 @@ export function SettingsView({
       {/* Accounts */}
       <SectionCard title="Accounts">
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Input
               value={acctName}
               onChange={(e) => setAcctName(e.target.value)}

@@ -26,7 +26,7 @@ export function StatCard({
       </div>
       <p
         className={cn(
-          "mt-2 font-mono text-2xl font-semibold tracking-tight tabular-nums",
+          "mt-2 font-mono text-xl font-semibold tracking-tight break-words tabular-nums sm:text-2xl",
           valueClassName,
         )}
       >

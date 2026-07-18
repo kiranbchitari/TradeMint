@@ -101,9 +101,9 @@ export function NotesApp({
   }
 
   return (
-    <div className="flex h-[calc(100vh-9rem)] flex-col gap-4 lg:flex-row">
+    <div className="flex h-auto flex-col gap-4 lg:h-[calc(100vh-9rem)] lg:flex-row">
       {/* List */}
-      <div className="flex w-full shrink-0 flex-col rounded-xl border bg-card lg:w-72">
+      <div className="flex max-h-72 w-full shrink-0 flex-col rounded-xl border bg-card lg:max-h-none lg:w-72">
         <div className="flex items-center justify-between border-b px-3 py-2.5">
           <span className="text-sm font-semibold">Notes</span>
           <Button size="icon-sm" variant="ghost" onClick={newNote} aria-label="New note">
