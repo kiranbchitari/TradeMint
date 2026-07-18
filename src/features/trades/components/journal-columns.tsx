@@ -23,6 +23,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { EMOTION_LABELS, type Emotion } from "@/lib/constants";
 import { formatCurrency, formatDate, formatNumber, formatR } from "@/lib/format";
+import {
+  formatRiskReward,
+  plannedRiskReward,
+} from "@/features/trades/lib/risk-reward";
 import type { TradeWithRelations } from "@/types/models";
 
 import {
@@ -167,6 +171,22 @@ export function createTradeColumns({
           {row.original.reward_amount == null
             ? "—"
             : formatCurrency(row.original.reward_amount, currency)}
+        </span>
+      ),
+    },
+    {
+      id: "riskReward",
+      header: "R:R",
+      enableSorting: false,
+      cell: ({ row }) => (
+        <span className="font-mono text-sm tabular-nums text-muted-foreground">
+          {formatRiskReward(
+            plannedRiskReward(
+              row.original.entry_price,
+              row.original.stop_loss,
+              row.original.target_price,
+            ),
+          )}
         </span>
       ),
     },

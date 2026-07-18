@@ -22,6 +22,10 @@ import {
   StatusBadge,
 } from "@/features/trades/components/trade-badges";
 import { getTradeById } from "@/features/trades/queries";
+import {
+  formatRiskReward,
+  plannedRiskReward,
+} from "@/features/trades/lib/risk-reward";
 import { STORAGE_BUCKETS, EMOTION_LABELS, type Emotion } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -81,6 +85,12 @@ export default async function TradeDetailPage({
     trade.exit_at != null
       ? formatDistanceStrict(new Date(trade.entry_at), new Date(trade.exit_at))
       : "—";
+
+  const riskReward = plannedRiskReward(
+    trade.entry_price,
+    trade.stop_loss,
+    trade.target_price,
+  );
 
   return (
     <PageContainer>
@@ -233,6 +243,10 @@ export default async function TradeDetailPage({
                     ? "—"
                     : formatNumber(trade.target_price)
                 }
+              />
+              <DataRow
+                label="Risk : reward"
+                value={formatRiskReward(riskReward)}
               />
               <DataRow label="Quantity" value={formatNumber(trade.quantity)} />
               <DataRow

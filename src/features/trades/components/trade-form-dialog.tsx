@@ -54,6 +54,7 @@ import type { TradeWithRelations } from "@/types/models";
 import { createTradeAction, updateTradeAction, addTradeImagesAction } from "../actions";
 import { useTradeOptions } from "../hooks/use-trade-options";
 import { getSignedUrls, uploadTradeImages } from "../lib/images";
+import { formatRiskReward, plannedRiskReward } from "../lib/risk-reward";
 import { tradeFormSchema, type TradeFormValues } from "../schemas";
 import { createTagAction } from "@/features/tags/actions";
 import { createMistakeAction } from "@/features/mistakes/actions";
@@ -274,6 +275,12 @@ export function TradeFormDialog({
     }
   }
 
+  const rr = plannedRiskReward(
+    form.watch("entryPrice"),
+    form.watch("stopLoss"),
+    form.watch("targetPrice"),
+  );
+
   const strategyOptions = options?.strategies ?? [];
   const accountOptions = options?.accounts ?? [];
 
@@ -424,6 +431,22 @@ export function TradeFormDialog({
                   )}
                 />
               ))}
+
+              <div className="sm:col-span-2">
+                <div className="flex items-center justify-between rounded-lg border bg-muted/40 px-3 py-2.5">
+                  <span className="text-sm text-muted-foreground">
+                    Planned risk : reward
+                  </span>
+                  <span className="font-mono text-sm font-semibold tabular-nums">
+                    {formatRiskReward(rr)}
+                  </span>
+                </div>
+                {rr == null && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Enter entry price, stop loss and target to see the ratio.
+                  </p>
+                )}
+              </div>
 
               <SectionTitle>Timing</SectionTitle>
 
