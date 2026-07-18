@@ -51,7 +51,12 @@ import {
 import { cn } from "@/lib/utils";
 import type { TradeWithRelations } from "@/types/models";
 
-import { createTradeAction, updateTradeAction, addTradeImagesAction } from "../actions";
+import {
+  createTradeAction,
+  updateTradeAction,
+  addTradeImagesAction,
+  deleteTradeImageAction,
+} from "../actions";
 import { useTradeOptions } from "../hooks/use-trade-options";
 import { getSignedUrls, uploadTradeImages } from "../lib/images";
 import { formatRiskReward, plannedRiskReward } from "../lib/risk-reward";
@@ -244,6 +249,18 @@ export function TradeFormDialog({
   function removeNewFile(idx: number) {
     setFiles((prev) => prev.filter((_, i) => i !== idx));
     setPreviews((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  async function removeExisting(imageId: string) {
+    // Optimistically drop it from the grid, then delete server-side.
+    setExisting((prev) => prev.filter((e) => e.id !== imageId));
+    const res = await deleteTradeImageAction(imageId);
+    if (res.error) {
+      toast.error(res.error);
+      return;
+    }
+    toast.success("Screenshot removed");
+    await queryClient.invalidateQueries({ queryKey: ["trades"] });
   }
 
   async function onSubmit(values: TradeFormValues) {
@@ -727,7 +744,7 @@ export function TradeFormDialog({
                   {existing.map((img) => (
                     <div
                       key={img.id}
-                      className="relative size-20 overflow-hidden rounded-lg border bg-muted"
+                      className="group relative size-20 overflow-hidden rounded-lg border bg-muted"
                     >
                       {img.url && (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -737,6 +754,14 @@ export function TradeFormDialog({
                           className="size-full object-cover"
                         />
                       )}
+                      <button
+                        type="button"
+                        onClick={() => removeExisting(img.id)}
+                        aria-label="Delete screenshot"
+                        className="absolute top-0.5 right-0.5 rounded-full bg-background/80 p-0.5 text-foreground opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+                      >
+                        <X className="size-3.5" />
+                      </button>
                     </div>
                   ))}
                   {previews.map((src, i) => (

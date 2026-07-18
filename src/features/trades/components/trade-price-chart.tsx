@@ -73,18 +73,26 @@ export function TradePriceChart({ symbol, market }: Props) {
     };
   }, [tvSymbol, resolvedTheme]);
 
+  // The height MUST live on an outer wrapper: TradingView's embed script
+  // rewrites the `.tradingview-widget-container` element's inline style to
+  // height:100%;width:100%, so any height set there is lost and the box
+  // collapses to the iframe's 150px default. clamp() keeps it responsive.
+  const heightStyle = { height: "clamp(480px, 72vh, 820px)" } as const;
+
   if (!tvSymbol) {
     return (
-      <div className="flex h-[460px] w-full items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground sm:h-[600px]">
+      <div
+        style={heightStyle}
+        className="flex w-full items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground"
+      >
         No symbol to chart.
       </div>
     );
   }
 
   return (
-    <div
-      ref={ref}
-      className="tradingview-widget-container h-[460px] w-full overflow-hidden rounded-lg sm:h-[600px]"
-    />
+    <div style={heightStyle} className="w-full overflow-hidden rounded-lg">
+      <div ref={ref} className="tradingview-widget-container h-full w-full" />
+    </div>
   );
 }
