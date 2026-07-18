@@ -131,16 +131,12 @@ export default async function TradeDetailPage({
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Main column */}
         <div className="space-y-4 lg:col-span-2">
-          <SectionCard title="Price action" contentClassName="p-4">
-            <TradePriceChart
-              entryPrice={trade.entry_price}
-              exitPrice={trade.exit_price}
-              stopLoss={trade.stop_loss}
-              targetPrice={trade.target_price}
-              entryAt={trade.entry_at}
-              exitAt={trade.exit_at}
-              direction={trade.direction}
-            />
+          <SectionCard
+            title="Price action"
+            description="Live market data · powered by TradingView"
+            contentClassName="p-4"
+          >
+            <TradePriceChart symbol={trade.symbol} market={trade.market} />
           </SectionCard>
 
           <SectionCard title="Screenshots">
