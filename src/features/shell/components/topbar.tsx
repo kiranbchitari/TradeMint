@@ -6,6 +6,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { useTradeDialog } from "@/features/trades/components/trade-dialog-provider";
 
+import { NotificationBell } from "./notification-bell";
 import { UserMenu, type ShellUser } from "./user-menu";
 
 export function Topbar({
@@ -48,6 +49,7 @@ export function Topbar({
           <Plus className="size-4" />
           <span className="hidden sm:inline">New trade</span>
         </Button>
+        <NotificationBell />
         <ThemeToggle />
         <UserMenu user={user} />
       </div>

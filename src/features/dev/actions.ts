@@ -32,9 +32,12 @@ export async function seedDemoDataAction(): Promise<Result> {
   } = await supabase.auth.getUser();
   if (!user) return { error: "You must be signed in." };
 
+  // Scope to OWNED trades — a trade shared with this account is visible under
+  // RLS but must not count as "already has data" for the demo seed.
   const { count } = await supabase
     .from("trades")
-    .select("id", { count: "exact", head: true });
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
   if ((count ?? 0) > 0) {
     return { error: "You already have trades — demo seed skipped." };
   }
