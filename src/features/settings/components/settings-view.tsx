@@ -4,7 +4,16 @@ import * as React from "react";
 
 import { useRouter } from "next/navigation";
 
-import { Download, Loader2, Monitor, Moon, Plus, Sun, Trash2 } from "lucide-react";
+import {
+  Check,
+  Download,
+  Loader2,
+  Monitor,
+  Moon,
+  Plus,
+  Sun,
+  Trash2,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 
@@ -31,6 +40,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import {
+  ACCENT_STORAGE_KEY,
+  ACCENTS,
+  DEFAULT_ACCENT,
+} from "@/lib/accent";
 import { CURRENCIES } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -59,6 +73,20 @@ export function SettingsView({
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [pending, startTransition] = React.useTransition();
+
+  // Accent theme — persisted in localStorage + reflected on <html data-accent>.
+  // Mounted gate avoids a hydration mismatch on the active-swatch highlight.
+  const [mounted, setMounted] = React.useState(false);
+  const [accent, setAccent] = React.useState(DEFAULT_ACCENT);
+  React.useEffect(() => {
+    setMounted(true);
+    setAccent(localStorage.getItem(ACCENT_STORAGE_KEY) ?? DEFAULT_ACCENT);
+  }, []);
+  const applyAccent = (value: string) => {
+    setAccent(value);
+    localStorage.setItem(ACCENT_STORAGE_KEY, value);
+    document.documentElement.setAttribute("data-accent", value);
+  };
 
   const [fullName, setFullName] = React.useState(profile?.full_name ?? "");
   const [currency, setCurrency] = React.useState(profile?.currency ?? "USD");
@@ -222,28 +250,60 @@ export function SettingsView({
 
       {/* Appearance */}
       <SectionCard title="Appearance">
-        <div className="space-y-3">
-          <Label>Theme</Label>
-          <div className="grid grid-cols-3 gap-2">
-            {themeOptions.map((opt) => {
-              const Icon = opt.icon;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setTheme(opt.value)}
-                  className={cn(
-                    "flex flex-col items-center gap-1.5 rounded-lg border py-3 text-sm transition-colors",
-                    theme === opt.value
-                      ? "border-primary bg-primary/5 text-foreground"
-                      : "text-muted-foreground hover:bg-muted/50",
-                  )}
-                >
-                  <Icon className="size-4" />
-                  {opt.label}
-                </button>
-              );
-            })}
+        <div className="space-y-5">
+          <div className="space-y-3">
+            <Label>Theme</Label>
+            <div className="grid grid-cols-3 gap-2">
+              {themeOptions.map((opt) => {
+                const Icon = opt.icon;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setTheme(opt.value)}
+                    className={cn(
+                      "flex flex-col items-center gap-1.5 rounded-lg border py-3 text-sm transition-colors",
+                      theme === opt.value
+                        ? "border-primary bg-primary/5 text-foreground"
+                        : "text-muted-foreground hover:bg-muted/50",
+                    )}
+                  >
+                    <Icon className="size-4" />
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <Label>Accent color</Label>
+            <div className="flex flex-wrap gap-2.5">
+              {ACCENTS.map((a) => {
+                const active = mounted && accent === a.value;
+                return (
+                  <button
+                    key={a.value}
+                    type="button"
+                    onClick={() => applyAccent(a.value)}
+                    title={a.label}
+                    aria-label={`${a.label} accent`}
+                    aria-pressed={active}
+                    className={cn(
+                      "flex size-9 items-center justify-center rounded-full ring-offset-2 ring-offset-background transition-shadow hover:ring-2 hover:ring-border",
+                      active && "ring-2 ring-foreground",
+                    )}
+                  >
+                    <span
+                      className="flex size-6 items-center justify-center rounded-full"
+                      style={{ backgroundColor: a.swatch }}
+                    >
+                      {active && <Check className="size-3.5 text-white" />}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </SectionCard>

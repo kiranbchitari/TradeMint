@@ -190,17 +190,6 @@ export default async function TradeDetailPage({
               )}
             </div>
           </SectionCard>
-
-          <AiPlaceholderCard
-            title="AI Trade Review"
-            description="An AI coach will analyse this trade's execution, risk and psychology, then suggest concrete improvements."
-            bullets={[
-              "Execution quality score",
-              "Risk & sizing feedback",
-              "Emotional pattern check",
-              "What to repeat / avoid",
-            ]}
-          />
         </div>
 
         {/* Side column */}
@@ -329,6 +318,19 @@ export default async function TradeDetailPage({
             </ol>
           </SectionCard>
         </div>
+      </div>
+
+      <div className="mt-4">
+        <AiPlaceholderCard
+          title="AI Trade Review"
+          description="An AI coach will analyse this trade's execution, risk and psychology, then suggest concrete improvements."
+          bullets={[
+            "Execution quality score",
+            "Risk & sizing feedback",
+            "Emotional pattern check",
+            "What to repeat / avoid",
+          ]}
+        />
       </div>
     </PageContainer>
   );

@@ -155,6 +155,87 @@
   --sidebar-ring: oklch(0.62 0.2 277);
 }
 
+/* --- Accent themes (user-selectable) --------------------------------------
+   Indigo is the default and lives in :root/.dark above. Each alternate accent
+   overrides only the brand-accent tokens, and MUST set the same tokens in both
+   its light ([data-accent=x]) and dark (.dark[data-accent=x]) variants so the
+   light values don't leak into dark mode. Financial (profit/loss) colors are
+   intentionally left untouched. */
+[data-accent="violet"] {
+  --primary: oklch(0.52 0.2 305);
+  --ring: oklch(0.52 0.2 305);
+  --chart-1: oklch(0.52 0.2 305);
+  --sidebar-primary: oklch(0.52 0.2 305);
+  --sidebar-ring: oklch(0.52 0.2 305);
+}
+.dark[data-accent="violet"] {
+  --primary: oklch(0.62 0.19 305);
+  --ring: oklch(0.62 0.19 305);
+  --chart-1: oklch(0.62 0.19 305);
+  --sidebar-primary: oklch(0.62 0.19 305);
+  --sidebar-ring: oklch(0.62 0.19 305);
+}
+
+[data-accent="blue"] {
+  --primary: oklch(0.52 0.17 255);
+  --ring: oklch(0.52 0.17 255);
+  --chart-1: oklch(0.52 0.17 255);
+  --sidebar-primary: oklch(0.52 0.17 255);
+  --sidebar-ring: oklch(0.52 0.17 255);
+}
+.dark[data-accent="blue"] {
+  --primary: oklch(0.62 0.16 255);
+  --ring: oklch(0.62 0.16 255);
+  --chart-1: oklch(0.62 0.16 255);
+  --sidebar-primary: oklch(0.62 0.16 255);
+  --sidebar-ring: oklch(0.62 0.16 255);
+}
+
+[data-accent="teal"] {
+  --primary: oklch(0.52 0.12 195);
+  --ring: oklch(0.52 0.12 195);
+  --chart-1: oklch(0.52 0.12 195);
+  --sidebar-primary: oklch(0.52 0.12 195);
+  --sidebar-ring: oklch(0.52 0.12 195);
+}
+.dark[data-accent="teal"] {
+  --primary: oklch(0.64 0.12 195);
+  --ring: oklch(0.64 0.12 195);
+  --chart-1: oklch(0.64 0.12 195);
+  --sidebar-primary: oklch(0.64 0.12 195);
+  --sidebar-ring: oklch(0.64 0.12 195);
+}
+
+[data-accent="emerald"] {
+  --primary: oklch(0.52 0.15 155);
+  --ring: oklch(0.52 0.15 155);
+  --chart-1: oklch(0.52 0.15 155);
+  --sidebar-primary: oklch(0.52 0.15 155);
+  --sidebar-ring: oklch(0.52 0.15 155);
+}
+.dark[data-accent="emerald"] {
+  --primary: oklch(0.64 0.15 155);
+  --ring: oklch(0.64 0.15 155);
+  --chart-1: oklch(0.64 0.15 155);
+  --sidebar-primary: oklch(0.64 0.15 155);
+  --sidebar-ring: oklch(0.64 0.15 155);
+}
+
+[data-accent="rose"] {
+  --primary: oklch(0.52 0.2 18);
+  --ring: oklch(0.52 0.2 18);
+  --chart-1: oklch(0.52 0.2 18);
+  --sidebar-primary: oklch(0.52 0.2 18);
+  --sidebar-ring: oklch(0.52 0.2 18);
+}
+.dark[data-accent="rose"] {
+  --primary: oklch(0.62 0.19 18);
+  --ring: oklch(0.62 0.19 18);
+  --chart-1: oklch(0.62 0.19 18);
+  --sidebar-primary: oklch(0.62 0.19 18);
+  --sidebar-ring: oklch(0.62 0.19 18);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

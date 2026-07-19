@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import "./globals.css";
 import { Providers } from "@/components/providers";
+import { accentInitScript } from "@/lib/accent";
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants";
 import { env } from "@/lib/env";
 
@@ -47,6 +48,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full`}
     >
       <body className="min-h-full bg-background text-foreground antialiased">
+        <script dangerouslySetInnerHTML={{ __html: accentInitScript }} />
         <Providers>{children}</Providers>
       </body>
     </html>
