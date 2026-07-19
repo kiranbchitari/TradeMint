@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   addMonths,
   format,
+  isValid,
   parse,
   parseISO,
   subMonths,
@@ -39,9 +40,13 @@ export default async function CalendarPage({
     getUserCurrency(),
   ]);
 
-  const month = monthParam
+  // A malformed ?month= (bookmark, hand-edited URL, crawler) parses to an
+  // Invalid Date, and date-fns v4 `format()` THROWS on that — crashing the
+  // page. Fall back to the current month instead.
+  const parsedMonth = monthParam
     ? parse(monthParam, "yyyy-MM", new Date())
     : new Date();
+  const month = isValid(parsedMonth) ? parsedMonth : new Date();
   const monthKey = format(month, "yyyy-MM");
   const prev = format(subMonths(month, 1), "yyyy-MM");
   const next = format(addMonths(month, 1), "yyyy-MM");

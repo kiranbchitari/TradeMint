@@ -175,23 +175,40 @@ export function TradeFormDialog({
     defaultValues: defaultsFor(trade),
   });
 
+  // Mirror the current object-URL previews in a ref so we can revoke them
+  // (freeing blob memory) on reset, removal, submit, and unmount — otherwise
+  // each pasted/added screenshot leaks for the page's lifetime.
+  const previewsRef = React.useRef<string[]>([]);
+  React.useEffect(() => {
+    previewsRef.current = previews;
+  }, [previews]);
+  React.useEffect(
+    () => () => previewsRef.current.forEach((u) => URL.revokeObjectURL(u)),
+    [],
+  );
+
   // Reset whenever the dialog opens for a new/edited trade.
   React.useEffect(() => {
-    if (open) {
-      form.reset(defaultsFor(trade));
-      setFiles([]);
-      setPreviews([]);
-      if (trade?.images.length) {
-        setExisting(trade.images.map((i) => ({ id: i.id, path: i.storage_path })));
-        getSignedUrls(trade.images.map((i) => i.storage_path)).then((map) => {
-          setExisting((prev) =>
-            prev.map((e) => ({ ...e, url: map[e.path] })),
-          );
-        });
-      } else {
-        setExisting([]);
-      }
+    if (!open) return;
+    // Guard against a slow signed-URL fetch resolving after the dialog has been
+    // reopened for a different trade (which would map URLs onto the wrong rows).
+    let active = true;
+    form.reset(defaultsFor(trade));
+    setFiles([]);
+    previewsRef.current.forEach((u) => URL.revokeObjectURL(u));
+    setPreviews([]);
+    if (trade?.images.length) {
+      setExisting(trade.images.map((i) => ({ id: i.id, path: i.storage_path })));
+      getSignedUrls(trade.images.map((i) => i.storage_path)).then((map) => {
+        if (!active) return;
+        setExisting((prev) => prev.map((e) => ({ ...e, url: map[e.path] })));
+      });
+    } else {
+      setExisting([]);
     }
+    return () => {
+      active = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, trade?.id]);
 
@@ -247,16 +264,22 @@ export function TradeFormDialog({
   }, [open, addFiles]);
 
   function removeNewFile(idx: number) {
+    setPreviews((prev) => {
+      const url = prev[idx];
+      if (url) URL.revokeObjectURL(url);
+      return prev.filter((_, i) => i !== idx);
+    });
     setFiles((prev) => prev.filter((_, i) => i !== idx));
-    setPreviews((prev) => prev.filter((_, i) => i !== idx));
   }
 
   async function removeExisting(imageId: string) {
     // Optimistically drop it from the grid, then delete server-side.
+    const snapshot = existing;
     setExisting((prev) => prev.filter((e) => e.id !== imageId));
     const res = await deleteTradeImageAction(imageId);
     if (res.error) {
       toast.error(res.error);
+      setExisting(snapshot); // roll back — the image still exists server-side
       return;
     }
     toast.success("Screenshot removed");
@@ -264,6 +287,7 @@ export function TradeFormDialog({
   }
 
   async function onSubmit(values: TradeFormValues) {
+    if (submitting) return; // hard guard against double-submit (e.g. Enter key)
     setSubmitting(true);
     try {
       const res = isEdit
@@ -279,9 +303,21 @@ export function TradeFormDialog({
       if (files.length > 0) {
         const uploaded = await uploadTradeImages(tradeId, files);
         if (uploaded.length > 0) {
-          await addTradeImagesAction(tradeId, uploaded);
+          const imgRes = await addTradeImagesAction(tradeId, uploaded);
+          if (imgRes.error) {
+            toast.warning("Trade saved, but the screenshots couldn't be attached.");
+          }
+        }
+        if (uploaded.length < files.length) {
+          const failed = files.length - uploaded.length;
+          toast.warning(
+            `${failed} screenshot${failed === 1 ? "" : "s"} failed to upload.`,
+          );
         }
       }
+
+      // Screenshots are persisted (or reported); free the blob preview memory.
+      previewsRef.current.forEach((u) => URL.revokeObjectURL(u));
 
       await queryClient.invalidateQueries({ queryKey: ["trades"] });
       toast.success(isEdit ? "Trade updated" : "Trade logged");

@@ -52,7 +52,11 @@ function ShellChrome({
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [paletteOpen, setPaletteOpen] = React.useState(false);
 
+  // Read persisted sidebar state after mount only — reading localStorage during
+  // render would cause an SSR/client hydration mismatch, so this deliberate
+  // prop→state sync in an effect is the correct pattern here.
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCollapsed(localStorage.getItem(COLLAPSE_KEY) === "1");
   }, []);
 

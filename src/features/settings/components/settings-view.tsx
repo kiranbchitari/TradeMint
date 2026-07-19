@@ -103,31 +103,57 @@ export function SettingsView({
 
   async function exportData() {
     const supabase = createClient();
-    const [trades, strategies, playbooks, notes, tags] = await Promise.all([
-      supabase.from("trades").select("*"),
-      supabase.from("strategies").select("*"),
-      supabase.from("playbooks").select("*"),
-      supabase.from("notes").select("*"),
-      supabase.from("tags").select("*"),
-    ]);
-    const payload = {
-      exported_at: new Date().toISOString(),
-      trades: trades.data ?? [],
-      strategies: strategies.data ?? [],
-      playbooks: playbooks.data ?? [],
-      notes: notes.data ?? [],
-      tags: tags.data ?? [],
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `trademint-backup-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Backup downloaded");
+    // Page past the 1000-row cap and surface any error, so a "backup" is never
+    // silently truncated or partially empty while still reporting success.
+    const BACKUP_TABLES = [
+      "trades",
+      "strategies",
+      "playbooks",
+      "notes",
+      "tags",
+      "accounts",
+      "brokers",
+      "mistakes",
+    ] as const;
+
+    async function fetchAll(table: (typeof BACKUP_TABLES)[number]) {
+      const rows: unknown[] = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabase
+          .from(table)
+          .select("*")
+          .range(from, from + 999);
+        if (error) throw new Error(`${table}: ${error.message}`);
+        if (!data || data.length === 0) break;
+        rows.push(...data);
+        if (data.length < 1000) break;
+      }
+      return rows;
+    }
+
+    try {
+      const results = await Promise.all(BACKUP_TABLES.map(fetchAll));
+      const payload = {
+        exported_at: new Date().toISOString(),
+        ...Object.fromEntries(BACKUP_TABLES.map((t, i) => [t, results[i]])),
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `trademint-backup-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Backup downloaded");
+    } catch (e) {
+      toast.error(
+        e instanceof Error
+          ? `Backup failed — ${e.message}`
+          : "Backup failed. Please try again.",
+      );
+    }
   }
 
   const themeOptions = [

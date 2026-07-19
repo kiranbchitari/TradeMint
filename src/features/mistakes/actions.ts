@@ -46,5 +46,6 @@ export async function deleteMistakeAction(id: string): Promise<Result> {
   const supabase = await createClient();
   const { error } = await supabase.from("mistakes").delete().eq("id", id);
   if (error) return { error: error.message };
+  revalidatePath("/settings");
   return { data: undefined };
 }

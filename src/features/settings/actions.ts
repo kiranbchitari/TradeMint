@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
+import { STORAGE_BUCKETS } from "@/lib/constants";
 import type { Json } from "@/types/database";
 
 type Result<T = undefined> =
@@ -111,6 +112,22 @@ export async function deleteAllDataAction(): Promise<Result> {
   const { supabase, user } = await requireUser();
   if (!user) return { error: "You must be signed in." };
 
+  // Delete trade screenshots from storage first — the DB cascade (trade →
+  // trade_images) removes the rows but never the underlying storage objects,
+  // which would otherwise stay readable via the user's folder.
+  for (let from = 0; ; from += 1000) {
+    const { data: images } = await supabase
+      .from("trade_images")
+      .select("storage_path")
+      .eq("user_id", user.id)
+      .range(from, from + 999);
+    if (!images || images.length === 0) break;
+    await supabase.storage
+      .from(STORAGE_BUCKETS.tradeImages)
+      .remove(images.map((i) => i.storage_path));
+    if (images.length < 1000) break;
+  }
+
   const tables = [
     "trades",
     "strategies",
@@ -125,10 +142,20 @@ export async function deleteAllDataAction(): Promise<Result> {
     "notifications",
   ] as const;
 
+  const failed: string[] = [];
   for (const table of tables) {
-    await supabase.from(table).delete().eq("user_id", user.id);
+    const { error } = await supabase
+      .from(table)
+      .delete()
+      .eq("user_id", user.id);
+    if (error) failed.push(table);
   }
 
   revalidatePath("/", "layout");
+  if (failed.length > 0) {
+    return {
+      error: `Some data could not be deleted (${failed.join(", ")}). Please try again.`,
+    };
+  }
   return { data: undefined };
 }

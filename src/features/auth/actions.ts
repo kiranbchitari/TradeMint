@@ -41,7 +41,15 @@ export async function loginAction(formData: FormData): Promise<AuthState> {
     return { error: "Invalid email or password." };
   }
 
-  const redirectTo = (formData.get("redirectTo") as string) || "/dashboard";
+  // Only allow same-origin relative paths — `redirect()` will follow an
+  // absolute URL, so an unvalidated `?redirectTo=` is an open-redirect vector.
+  const requested = (formData.get("redirectTo") as string) || "/dashboard";
+  const redirectTo =
+    requested.startsWith("/") &&
+    !requested.startsWith("//") &&
+    !requested.includes("\\")
+      ? requested
+      : "/dashboard";
   revalidatePath("/", "layout");
   redirect(redirectTo);
 }
@@ -68,7 +76,10 @@ export async function registerAction(formData: FormData): Promise<AuthState> {
   });
 
   if (error) {
-    return { error: error.message };
+    // Avoid echoing Supabase's message verbatim — "User already registered"
+    // lets an attacker enumerate accounts. Password strength is already
+    // enforced by `registerSchema` above, so a generic message is safe here.
+    return { error: "Could not create your account. Please try again." };
   }
 
   // If email confirmation is disabled, a session is returned immediately.

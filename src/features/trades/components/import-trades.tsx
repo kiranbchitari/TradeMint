@@ -54,6 +54,14 @@ const HEADER_ALIASES: Record<string, string> = {
 
 const norm = (s: string) => s.toLowerCase().replace(/[\s_-]/g, "");
 
+/** Map broker side synonyms (Buy/Sell/B/S…) onto long/short. */
+const normDirection = (v: string) => {
+  const s = v.trim().toLowerCase();
+  if (["long", "buy", "b", "l", "bought"].includes(s)) return "long";
+  if (["short", "sell", "s", "sold"].includes(s)) return "short";
+  return s;
+};
+
 type Row = Record<string, string>;
 
 function isValid(row: Row) {
@@ -86,7 +94,7 @@ export function ImportTrades() {
         const row: Row = {};
         headers.forEach((key, i) => {
           const val = (cells[i] ?? "").trim();
-          if (val) row[key] = key === "direction" ? val.toLowerCase() : val;
+          if (val) row[key] = key === "direction" ? normDirection(val) : val;
         });
         return row;
       });
@@ -105,7 +113,12 @@ export function ImportTrades() {
         toast.error(res.error);
         return;
       }
-      toast.success(`Imported ${res.data?.count ?? 0} trades`);
+      const imported = res.data?.imported ?? 0;
+      const skipped = res.data?.skipped ?? 0;
+      toast.success(
+        `Imported ${imported} trade${imported === 1 ? "" : "s"}` +
+          (skipped ? `, skipped ${skipped} invalid` : ""),
+      );
       router.push("/journal");
     });
   }

@@ -70,14 +70,22 @@ export function TagsManager({
 
   function recolor(id: string, c: string) {
     startTransition(async () => {
-      await updateTagAction(id, { color: c });
+      const res = await updateTagAction(id, { color: c });
+      if ("error" in res && res.error) {
+        toast.error(res.error);
+        return;
+      }
       router.refresh();
     });
   }
 
   function remove(id: string) {
     startTransition(async () => {
-      await deleteTagAction(id);
+      const res = await deleteTagAction(id);
+      if ("error" in res && res.error) {
+        toast.error(res.error);
+        return;
+      }
       toast.success("Tag deleted");
       router.refresh();
     });

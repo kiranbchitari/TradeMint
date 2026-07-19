@@ -84,7 +84,13 @@ export function NotesApp({
   function togglePin() {
     if (!selected) return;
     startTransition(async () => {
-      await updateNoteAction(selected.id, { is_pinned: !selected.is_pinned });
+      const res = await updateNoteAction(selected.id, {
+        is_pinned: !selected.is_pinned,
+      });
+      if (res.error) {
+        toast.error(res.error);
+        return;
+      }
       router.refresh();
     });
   }
@@ -93,7 +99,11 @@ export function NotesApp({
     if (!selected) return;
     const id = selected.id;
     startTransition(async () => {
-      await deleteNoteAction(id);
+      const res = await deleteNoteAction(id);
+      if (res.error) {
+        toast.error(res.error);
+        return;
+      }
       toast.success("Note deleted");
       setSelectedId(notes.find((n) => n.id !== id)?.id ?? null);
       router.refresh();

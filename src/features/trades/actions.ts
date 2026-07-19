@@ -24,6 +24,9 @@ type ActionResult<T = undefined> =
 
 type DB = SupabaseClient<Database>;
 
+// Upper bound on a single CSV import to avoid an unbounded memory/DB spike.
+const MAX_IMPORT_ROWS = 5000;
+
 function toIso(value: string | null | undefined): string | null {
   if (!value) return null;
   const d = new Date(value);
@@ -145,12 +148,18 @@ export async function updateTradeAction(
     return { error: parsed.error.issues[0]?.message ?? "Invalid trade data." };
   }
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("trades")
     .update(mapToInsert(parsed.data, user.id))
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
 
   if (error) return { error: error.message };
+  // A stale session or a deleted/non-owned id matches zero rows; without this
+  // check we'd report "Saved" while silently discarding the edit.
+  if (!updated || updated.length === 0) {
+    return { error: "That trade could not be found." };
+  }
 
   await syncJunctions(
     supabase,
@@ -260,6 +269,18 @@ export async function bulkDeleteTradesAction(
   if (!user) return { error: "You must be signed in." };
   if (ids.length === 0) return { data: undefined };
 
+  // Remove associated images from storage first — the DB cascade only deletes
+  // the `trade_images` rows, leaving the underlying blobs orphaned otherwise.
+  const { data: images } = await supabase
+    .from("trade_images")
+    .select("storage_path")
+    .in("trade_id", ids);
+  if (images && images.length > 0) {
+    await supabase.storage
+      .from(STORAGE_BUCKETS.tradeImages)
+      .remove(images.map((i) => i.storage_path));
+  }
+
   const { error } = await supabase.from("trades").delete().in("id", ids);
   if (error) return { error: error.message };
 
@@ -269,42 +290,61 @@ export async function bulkDeleteTradesAction(
 
 export async function importTradesAction(
   rows: unknown,
-): Promise<ActionResult<{ count: number }>> {
+): Promise<ActionResult<{ imported: number; skipped: number }>> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "You must be signed in." };
 
-  const parsed = z.array(importRowSchema).safeParse(rows);
-  if (!parsed.success) {
-    return { error: "Some rows are invalid. Check required columns." };
+  if (!Array.isArray(rows)) return { error: "Invalid import data." };
+  if (rows.length === 0) return { error: "No rows to import." };
+  if (rows.length > MAX_IMPORT_ROWS) {
+    return {
+      error: `Too many rows (${rows.length}). Import at most ${MAX_IMPORT_ROWS} at a time.`,
+    };
   }
-  if (parsed.data.length === 0) return { error: "No rows to import." };
 
-  const payloads: TradeInsert[] = parsed.data.map((r) => ({
-    user_id: user.id,
-    symbol: r.symbol.toUpperCase(),
-    market: r.market,
-    direction: r.direction,
-    status: r.status,
-    entry_price: r.entry_price,
-    exit_price: r.exit_price ?? null,
-    stop_loss: r.stop_loss ?? null,
-    target_price: r.target_price ?? null,
-    quantity: r.quantity,
-    fees: r.fees ?? 0,
-    entry_at: toIso(r.entry_at) ?? new Date().toISOString(),
-    exit_at: toIso(r.exit_at),
-    setup: r.setup ?? null,
-    notes: r.notes ?? null,
-  }));
+  // Validate row-by-row so one malformed row can't zero out the whole import.
+  // Valid rows are inserted; invalid ones are counted and reported back.
+  const payloads: TradeInsert[] = [];
+  let skipped = 0;
+  for (const raw of rows) {
+    const parsed = importRowSchema.safeParse(raw);
+    if (!parsed.success) {
+      skipped++;
+      continue;
+    }
+    const r = parsed.data;
+    payloads.push({
+      user_id: user.id,
+      symbol: r.symbol.toUpperCase(),
+      market: r.market,
+      direction: r.direction,
+      status: r.status,
+      entry_price: r.entry_price,
+      exit_price: r.exit_price ?? null,
+      stop_loss: r.stop_loss ?? null,
+      target_price: r.target_price ?? null,
+      quantity: r.quantity,
+      fees: r.fees ?? 0,
+      // Schema guarantees a parseable date, so `toIso` won't fall back here.
+      entry_at: toIso(r.entry_at) ?? new Date().toISOString(),
+      exit_at: toIso(r.exit_at),
+      setup: r.setup ?? null,
+      notes: r.notes ?? null,
+    });
+  }
+
+  if (payloads.length === 0) {
+    return { error: "No valid rows to import. Check the required columns." };
+  }
 
   const { error } = await supabase.from("trades").insert(payloads);
   if (error) return { error: error.message };
 
   revalidateTradeViews();
-  return { data: { count: payloads.length } };
+  return { data: { imported: payloads.length, skipped } };
 }
 
 export async function bulkGradeTradesAction(

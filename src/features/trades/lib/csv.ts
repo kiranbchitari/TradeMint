@@ -32,9 +32,15 @@ const EXPORT_COLUMNS: {
   { key: "notes", header: "Notes", get: (t) => t.notes },
 ];
 
+// A leading =, +, -, @ (or tab/CR) makes spreadsheet apps treat a text cell as
+// a formula. Prefix an apostrophe to defuse it — only for STRING cells, so we
+// never clobber legitimate negative numbers in numeric columns (net P&L, R…).
+const FORMULA_TRIGGER = /^[=+\-@\t\r]/;
+
 function escapeCell(value: string | number | null): string {
   if (value == null) return "";
-  const s = String(value);
+  let s = String(value);
+  if (typeof value === "string" && FORMULA_TRIGGER.test(s)) s = `'${s}`;
   if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }

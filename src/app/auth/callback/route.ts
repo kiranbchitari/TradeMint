@@ -9,7 +9,11 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  // Constrain `next` to a same-origin relative path (no `//host` protocol-
+  // relative escape) so the callback can't be turned into an open redirect.
+  const rawNext = searchParams.get("next") ?? "/dashboard";
+  const next =
+    rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/dashboard";
 
   // Supabase appends error params when a link is expired/invalid.
   const errorCode = searchParams.get("error_code") ?? searchParams.get("error");

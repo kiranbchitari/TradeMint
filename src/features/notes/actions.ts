@@ -41,8 +41,23 @@ export async function updateNoteAction(
   values: { title?: string; content?: string; tags?: string[]; is_pinned?: boolean },
 ): Promise<Result> {
   const supabase = await createClient();
-  const { error } = await supabase.from("notes").update(values).eq("id", id);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be signed in." };
+
+  // `.select()` returns the affected rows so we can tell a real save from a
+  // no-op (0 rows) — otherwise a lapsed session or a deleted note would report
+  // "Saved" while silently discarding the user's edits.
+  const { data, error } = await supabase
+    .from("notes")
+    .update(values)
+    .eq("id", id)
+    .select("id");
   if (error) return { error: error.message };
+  if (!data || data.length === 0) {
+    return { error: "Note not found — it may have been deleted. Your changes were not saved." };
+  }
   revalidatePath("/notes");
   revalidatePath("/dashboard");
   return { data: undefined };
@@ -50,8 +65,14 @@ export async function updateNoteAction(
 
 export async function deleteNoteAction(id: string): Promise<Result> {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be signed in." };
+
   const { error } = await supabase.from("notes").delete().eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/notes");
+  revalidatePath("/dashboard");
   return { data: undefined };
 }

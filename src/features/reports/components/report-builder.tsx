@@ -34,7 +34,6 @@ import { EquityCurveChart } from "@/features/analytics/components/equity-curve-c
 import {
   computeKpis,
   equityCurve,
-  pnlByDay,
   pnlByWeekday,
 } from "@/features/analytics/metrics";
 import {

@@ -146,7 +146,9 @@ export function MonthCalendar({
                 return linkDays && d ? (
                   <Link
                     key={key}
-                    href={`/calendar?date=${key}`}
+                    // Keep the viewed month (key is yyyy-MM-dd) so selecting a
+                    // day doesn't snap the grid back to the current month.
+                    href={`/calendar?month=${key.slice(0, 7)}&date=${key}`}
                     className="block"
                   >
                     {cell}

@@ -38,27 +38,51 @@ function mapTrade(row: RawTradeRow): TradeWithRelations {
   };
 }
 
+// Supabase caps a single `.select()` at 1000 rows. A trading journal can hold
+// far more, and every analytic (total P&L, equity curve, win rate, drawdown…)
+// must be computed over the user's FULL history — a silent 1000-row truncation
+// would make the headline numbers wrong. So we page through with `.range()`.
+// A stable secondary sort on `id` guarantees no row is skipped or duplicated
+// across page boundaries when many trades share the same `entry_at`.
+const PAGE_SIZE = 1000;
+
 /** All of the user's trades (flat rows), newest first. RLS scopes to the user. */
 export const getTrades = cache(async (): Promise<Trade[]> => {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("trades")
-    .select("*")
-    .order("entry_at", { ascending: false });
-  if (error) throw error;
-  return data ?? [];
+  const all: Trade[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("trades")
+      .select("*")
+      .order("entry_at", { ascending: false })
+      .order("id", { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    all.push(...data);
+    if (data.length < PAGE_SIZE) break;
+  }
+  return all;
 });
 
 /** All trades with joined strategy/account/tags/mistakes/images. */
 export const getTradesWithRelations = cache(
   async (): Promise<TradeWithRelations[]> => {
     const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("trades")
-      .select(RELATIONS)
-      .order("entry_at", { ascending: false });
-    if (error) throw error;
-    return ((data ?? []) as unknown as RawTradeRow[]).map(mapTrade);
+    const rows: RawTradeRow[] = [];
+    for (let from = 0; ; from += PAGE_SIZE) {
+      const { data, error } = await supabase
+        .from("trades")
+        .select(RELATIONS)
+        .order("entry_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      rows.push(...(data as unknown as RawTradeRow[]));
+      if (data.length < PAGE_SIZE) break;
+    }
+    return rows.map(mapTrade);
   },
 );
 
@@ -73,9 +97,4 @@ export async function getTradeById(
     .maybeSingle();
   if (error) throw error;
   return data ? mapTrade(data as unknown as RawTradeRow) : null;
-}
-
-export async function getRecentTrades(limit = 5): Promise<TradeWithRelations[]> {
-  const all = await getTradesWithRelations();
-  return all.slice(0, limit);
 }

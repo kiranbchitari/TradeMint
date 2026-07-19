@@ -22,6 +22,21 @@ const optionalNumber = z.preprocess(
   z.coerce.number().optional(),
 );
 
+// A number that falls back to a default when left blank. NOTE: `.default()`
+// only fires on `undefined` INPUT, but a blank form field arrives as "" which
+// `emptyToUndefined` turns into `undefined` *inside* the preprocess — too late
+// for an outer `.default()`. So substitute the fallback up front instead, or an
+// empty "Fees" field coerces to NaN and the form rejects it.
+const numberWithFallback = (fallback: number) =>
+  z.preprocess((v) => (v === "" || v == null ? fallback : v), z.coerce.number());
+
+// 1–5 integer rating; blank clears it. Matches the DB CHECK (1..5) so an
+// out-of-range value is caught here with a friendly message, not a raw PG error.
+const optionalRating = z.preprocess(
+  emptyToUndefined,
+  z.coerce.number().int().min(1).max(5).optional(),
+);
+
 export const tradeFormSchema = z
   .object({
     symbol: z.string().trim().min(1, "Instrument is required").max(32),
@@ -42,10 +57,8 @@ export const tradeFormSchema = z
     quantity: requiredNumber("Quantity is required").pipe(
       z.number().positive("Must be greater than 0"),
     ),
-    multiplier: z
-      .preprocess(emptyToUndefined, z.coerce.number().positive())
-      .default(1),
-    fees: z.preprocess(emptyToUndefined, z.coerce.number().min(0)).default(0),
+    multiplier: numberWithFallback(1).pipe(z.number().positive()),
+    fees: numberWithFallback(0).pipe(z.number().min(0)),
     riskAmount: optionalNumber,
     rewardAmount: optionalNumber,
 
@@ -54,9 +67,9 @@ export const tradeFormSchema = z
 
     setup: z.string().max(120).nullish(),
     emotion: z.enum(EMOTIONS).nullish(),
-    confidence: optionalNumber,
-    executionRating: optionalNumber,
-    disciplineRating: optionalNumber,
+    confidence: optionalRating,
+    executionRating: optionalRating,
+    disciplineRating: optionalRating,
     grade: z.enum(GRADES).nullish(),
     lessons: z.string().nullish(),
     notes: z.string().nullish(),
@@ -82,19 +95,54 @@ export const bulkGradeSchema = z.object({
   grade: z.enum(GRADES),
 });
 
+// Broker/CSV exports carry formatted numbers ("1,200.50", "$95", " 3 ").
+// Strip currency/grouping noise before coercion so real values aren't dropped.
+const cleanNumeric = (v: unknown) => {
+  if (v == null || v === "") return undefined;
+  const cleaned = typeof v === "string" ? v.replace(/[$£€,\s]/g, "") : v;
+  return cleaned === "" ? undefined : cleaned;
+};
+const importNumber = z.preprocess(cleanNumeric, z.coerce.number());
+const importOptionalNumber = z.preprocess(
+  cleanNumeric,
+  z.coerce.number().optional(),
+);
+
+// Accept the common broker synonyms for trade side.
+const importDirection = z.preprocess((v) => {
+  const s = String(v ?? "").trim().toLowerCase();
+  if (["long", "buy", "b", "l", "bought"].includes(s)) return "long";
+  if (["short", "sell", "s", "sold"].includes(s)) return "short";
+  return s;
+}, z.enum(DIRECTIONS));
+
+const isParseableDate = (v: unknown) =>
+  typeof v === "string" && !Number.isNaN(new Date(v).getTime());
+
 export const importRowSchema = z.object({
   symbol: z.string().trim().min(1),
   market: z.enum(MARKETS).catch("stock"),
-  direction: z.enum(DIRECTIONS),
+  direction: importDirection,
   status: z.enum(TRADE_STATUSES).catch("closed"),
-  entry_price: z.coerce.number(),
-  exit_price: optionalNumber,
-  stop_loss: optionalNumber,
-  target_price: optionalNumber,
-  quantity: z.coerce.number().positive(),
-  fees: z.preprocess(emptyToUndefined, z.coerce.number()).catch(0),
-  entry_at: z.string().min(1),
-  exit_at: z.string().nullish(),
+  entry_price: importNumber.pipe(z.number().positive()),
+  exit_price: importOptionalNumber,
+  stop_loss: importOptionalNumber,
+  target_price: importOptionalNumber,
+  quantity: importNumber.pipe(z.number().positive()),
+  fees: z
+    .preprocess((v) => (v == null || v === "" ? 0 : cleanNumeric(v) ?? 0), z.coerce.number())
+    .catch(0),
+  // Reject unparseable dates instead of silently stamping the import time onto
+  // the trade — a wrong timestamp corrupts calendar/analytics chronology.
+  entry_at: z
+    .string()
+    .trim()
+    .min(1, "Entry date is required")
+    .refine(isParseableDate, "Invalid date"),
+  exit_at: z.preprocess(
+    emptyToUndefined,
+    z.string().refine(isParseableDate, "Invalid date").optional(),
+  ),
   setup: z.string().nullish(),
   notes: z.string().nullish(),
 });

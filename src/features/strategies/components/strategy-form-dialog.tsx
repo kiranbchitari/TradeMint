@@ -51,8 +51,13 @@ export function StrategyFormDialog({
   const [rulesText, setRulesText] = React.useState("");
   const [checklistText, setChecklistText] = React.useState("");
 
+  // Sync the form to the selected strategy each time the dialog opens. This is
+  // a deliberate prop→state reset: React's `key`-remount alternative would skip
+  // resetting when the SAME strategy is reopened after an unsaved edit, so the
+  // set-state-in-effect rule is intentionally disabled for this block.
   React.useEffect(() => {
     if (!open) return;
+    /* eslint-disable react-hooks/set-state-in-effect */
     setName(strategy?.name ?? "");
     setDescription(strategy?.description ?? "");
     setColor(strategy?.color ?? ENTITY_COLORS[0]);
@@ -65,6 +70,7 @@ export function StrategyFormDialog({
             .join("\n")
         : "",
     );
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [open, strategy]);
 
   function submit() {

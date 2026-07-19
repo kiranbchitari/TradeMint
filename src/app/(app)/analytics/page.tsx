@@ -135,13 +135,13 @@ export default async function AnalyticsPage() {
           <StatCard
             label="Best Month"
             value={bestMonth ? formatSignedCurrency(bestMonth.pnl, currency) : "—"}
-            valueClassName="text-profit"
+            valueClassName={bestMonth ? pnlColorClass(bestMonth.pnl) : undefined}
             hint={bestMonth?.label}
           />
           <StatCard
             label="Worst Month"
             value={worstMonth ? formatSignedCurrency(worstMonth.pnl, currency) : "—"}
-            valueClassName="text-loss"
+            valueClassName={worstMonth ? pnlColorClass(worstMonth.pnl) : undefined}
             hint={worstMonth?.label}
           />
         </div>
