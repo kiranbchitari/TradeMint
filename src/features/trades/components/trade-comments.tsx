@@ -34,9 +34,17 @@ const NO_FEELING = "none";
 export function TradeComments({
   tradeId,
   comments,
+  canComment,
+  isOwner,
+  currentUserId,
 }: {
   tradeId: string;
   comments: TradeComment[];
+  /** Owner, commenter and editor can post; viewers cannot. */
+  canComment: boolean;
+  /** The trade owner may delete anyone's note; others only their own. */
+  isOwner: boolean;
+  currentUserId: string | null;
 }) {
   const router = useRouter();
   const [body, setBody] = React.useState("");
@@ -75,6 +83,7 @@ export function TradeComments({
   return (
     <div className="space-y-4">
       {/* Composer */}
+      {canComment ? (
       <div className="space-y-2.5">
         <Textarea
           value={body}
@@ -118,6 +127,11 @@ export function TradeComments({
           </Button>
         </div>
       </div>
+      ) : (
+        <p className="rounded-lg border border-dashed px-3 py-2.5 text-xs text-muted-foreground">
+          You have view-only access to this trade.
+        </p>
+      )}
 
       {/* Feed */}
       {comments.length === 0 ? (
@@ -127,39 +141,52 @@ export function TradeComments({
         </p>
       ) : (
         <ol className="relative space-y-4 border-l pl-4">
-          {comments.map((c) => (
-            <li key={c.id} className="group relative">
-              <span className="absolute top-1.5 -left-[21px] size-2.5 rounded-full bg-primary/70 ring-4 ring-background" />
-              <div className="flex items-center gap-2">
-                <time
-                  className="text-xs text-muted-foreground"
-                  dateTime={c.created_at}
-                  title={formatDateTime(c.created_at)}
-                >
-                  {formatDistanceToNow(new Date(c.created_at), {
-                    addSuffix: true,
-                  })}
-                </time>
-                {c.emotion && (
-                  <Badge variant="secondary" className="h-5 px-1.5 text-[11px]">
-                    {EMOTION_LABELS[c.emotion as Emotion] ?? c.emotion}
-                  </Badge>
-                )}
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  // Always tappable on touch; hover-reveal on desktop.
-                  className="ml-auto opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
-                  disabled={pending}
-                  onClick={() => remove(c.id)}
-                  aria-label="Delete note"
-                >
-                  <Trash2 className="size-3.5 text-muted-foreground" />
-                </Button>
-              </div>
-              <p className="mt-0.5 text-sm whitespace-pre-wrap">{c.body}</p>
-            </li>
-          ))}
+          {comments.map((c) => {
+            const mine = currentUserId != null && c.user_id === currentUserId;
+            const author = mine
+              ? "You"
+              : c.author_name ?? c.author_email ?? "Unknown";
+            const canDelete = mine || isOwner;
+            return (
+              <li key={c.id} className="group relative">
+                <span className="absolute top-1.5 -left-[21px] size-2.5 rounded-full bg-primary/70 ring-4 ring-background" />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium">{author}</span>
+                  <time
+                    className="text-xs text-muted-foreground"
+                    dateTime={c.created_at}
+                    title={formatDateTime(c.created_at)}
+                  >
+                    {formatDistanceToNow(new Date(c.created_at), {
+                      addSuffix: true,
+                    })}
+                  </time>
+                  {c.emotion && (
+                    <Badge
+                      variant="secondary"
+                      className="h-5 px-1.5 text-[11px]"
+                    >
+                      {EMOTION_LABELS[c.emotion as Emotion] ?? c.emotion}
+                    </Badge>
+                  )}
+                  {canDelete && (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      // Always tappable on touch; hover-reveal on desktop.
+                      className="ml-auto opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+                      disabled={pending}
+                      onClick={() => remove(c.id)}
+                      aria-label="Delete note"
+                    >
+                      <Trash2 className="size-3.5 text-muted-foreground" />
+                    </Button>
+                  )}
+                </div>
+                <p className="mt-0.5 text-sm whitespace-pre-wrap">{c.body}</p>
+              </li>
+            );
+          })}
         </ol>
       )}
     </div>

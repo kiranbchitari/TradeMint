@@ -95,6 +95,13 @@ export const bulkGradeSchema = z.object({
   grade: z.enum(GRADES),
 });
 
+export const SHARE_ROLES = ["viewer", "commenter", "editor"] as const;
+
+export const shareTradeSchema = z.object({
+  email: z.string().trim().min(1, "Enter an email.").email("Enter a valid email."),
+  role: z.enum(SHARE_ROLES),
+});
+
 export const tradeCommentSchema = z.object({
   body: z
     .string()

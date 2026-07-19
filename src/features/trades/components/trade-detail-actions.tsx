@@ -24,7 +24,14 @@ import type { TradeWithRelations } from "@/types/models";
 import { deleteTradeAction } from "../actions";
 import { useTradeDialog } from "./trade-dialog-provider";
 
-export function TradeDetailActions({ trade }: { trade: TradeWithRelations }) {
+export function TradeDetailActions({
+  trade,
+  canDelete = true,
+}: {
+  trade: TradeWithRelations;
+  /** Editors may edit but not delete; only the owner can delete. */
+  canDelete?: boolean;
+}) {
   const router = useRouter();
   const { openEdit } = useTradeDialog();
   const [pending, startTransition] = React.useTransition();
@@ -47,6 +54,7 @@ export function TradeDetailActions({ trade }: { trade: TradeWithRelations }) {
         <Pencil className="size-4" />
         Edit
       </Button>
+      {canDelete && (
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <Button variant="destructive" size="sm">
@@ -76,6 +84,7 @@ export function TradeDetailActions({ trade }: { trade: TradeWithRelations }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      )}
     </div>
   );
 }

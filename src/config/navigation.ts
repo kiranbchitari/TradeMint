@@ -10,6 +10,7 @@ import {
   Settings,
   Tags,
   Upload,
+  Users2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -33,6 +34,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, shortcut: "D" },
       { title: "Journal", href: "/journal", icon: BookOpen, shortcut: "J" },
       { title: "Trades", href: "/trades", icon: ListChecks },
+      { title: "Shared with me", href: "/shared", icon: Users2 },
       { title: "Analytics", href: "/analytics", icon: BarChart3 },
       { title: "Calendar", href: "/calendar", icon: CalendarDays },
     ],

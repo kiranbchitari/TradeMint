@@ -29,6 +29,27 @@ export type TradeImage = Tables<"trade_images">;
 export type TradeComment = Tables<"trade_comments">;
 export type TradeCommentInsert = TablesInsert<"trade_comments">;
 
+export type TradeShare = Tables<"trade_shares">;
+
+/** Collaboration roles, plus "owner" for the trade's creator. */
+export type ShareRole = "viewer" | "commenter" | "editor";
+export type TradeRole = ShareRole | "owner";
+
+/** The signed-in user's relationship to a trade, used to gate the UI. */
+export type TradeAccess = {
+  isOwner: boolean;
+  role: TradeRole | null;
+};
+
+/** A trade shared *with* the current user, for the "Shared with me" view. */
+export type SharedTrade = {
+  trade: Trade;
+  role: ShareRole;
+  ownerName: string | null;
+  ownerEmail: string | null;
+  sharedAt: string;
+};
+
 export type Note = Tables<"notes">;
 export type NoteInsert = TablesInsert<"notes">;
 

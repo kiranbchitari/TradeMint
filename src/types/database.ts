@@ -423,6 +423,8 @@ export type Database = {
       }
       trade_comments: {
         Row: {
+          author_email: string | null
+          author_name: string | null
           body: string
           created_at: string
           emotion: string | null
@@ -431,6 +433,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          author_email?: string | null
+          author_name?: string | null
           body: string
           created_at?: string
           emotion?: string | null
@@ -439,6 +443,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          author_email?: string | null
+          author_name?: string | null
           body?: string
           created_at?: string
           emotion?: string | null
@@ -520,6 +526,53 @@ export type Database = {
           },
           {
             foreignKeyName: "trade_mistakes_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_shares: {
+        Row: {
+          collaborator_email: string | null
+          collaborator_id: string
+          collaborator_name: string | null
+          created_at: string
+          id: string
+          owner_email: string | null
+          owner_id: string
+          owner_name: string | null
+          role: string
+          trade_id: string
+        }
+        Insert: {
+          collaborator_email?: string | null
+          collaborator_id: string
+          collaborator_name?: string | null
+          created_at?: string
+          id?: string
+          owner_email?: string | null
+          owner_id: string
+          owner_name?: string | null
+          role: string
+          trade_id: string
+        }
+        Update: {
+          collaborator_email?: string | null
+          collaborator_id?: string
+          collaborator_name?: string | null
+          created_at?: string
+          id?: string
+          owner_email?: string | null
+          owner_id?: string
+          owner_name?: string | null
+          role?: string
+          trade_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_shares_trade_id_fkey"
             columns: ["trade_id"]
             isOneToOne: false
             referencedRelation: "trades"
@@ -712,7 +765,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      share_trade: {
+        Args: { p_trade_id: string; p_email: string; p_role: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

@@ -12,6 +12,8 @@ import type { TradeInsert } from "@/types/models";
 import {
   bulkGradeSchema,
   importRowSchema,
+  SHARE_ROLES,
+  shareTradeSchema,
   tradeCommentSchema,
   tradeFormSchema,
   tradeImageInputSchema,
@@ -149,9 +151,12 @@ export async function updateTradeAction(
     return { error: parsed.error.issues[0]?.message ?? "Invalid trade data." };
   }
 
+  // user_id is immutable on update (enforced by the trades_lock_owner trigger),
+  // so don't send it — an editor collaborator must not rewrite ownership.
+  const { user_id: _ownerId, ...patch } = mapToInsert(parsed.data, user.id);
   const { data: updated, error } = await supabase
     .from("trades")
-    .update(mapToInsert(parsed.data, user.id))
+    .update(patch)
     .eq("id", id)
     .select("id");
 
@@ -304,11 +309,17 @@ export async function addTradeCommentAction(
     return { error: parsed.error.issues[0]?.message ?? "Invalid comment." };
   }
 
+  const fullName =
+    typeof user.user_metadata?.full_name === "string"
+      ? user.user_metadata.full_name
+      : null;
   const { error } = await supabase.from("trade_comments").insert({
     user_id: user.id,
     trade_id: tradeId,
     body: parsed.data.body,
     emotion: parsed.data.emotion ?? null,
+    author_name: fullName,
+    author_email: user.email ?? null,
   });
   if (error) return { error: error.message };
 
@@ -330,6 +341,89 @@ export async function deleteTradeCommentAction(
     .from("trade_comments")
     .delete()
     .eq("id", commentId);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/trades/${tradeId}`);
+  return { data: undefined };
+}
+
+export async function shareTradeAction(
+  tradeId: string,
+  input: unknown,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be signed in." };
+
+  const parsed = shareTradeSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid invite." };
+  }
+
+  const { data, error } = await supabase.rpc("share_trade", {
+    p_trade_id: tradeId,
+    p_email: parsed.data.email,
+    p_role: parsed.data.role,
+  });
+  if (error) return { error: error.message };
+
+  if (data !== "ok") {
+    const messages: Record<string, string> = {
+      not_owner: "Only the trade's owner can share it.",
+      user_not_found: "No TradeMint user has that email address.",
+      cannot_share_with_self: "You can't share a trade with yourself.",
+      invalid_role: "Pick a valid access level.",
+      unauthenticated: "You must be signed in.",
+    };
+    return { error: messages[data as string] ?? "Could not share the trade." };
+  }
+
+  revalidatePath(`/trades/${tradeId}`);
+  return { data: undefined };
+}
+
+export async function updateShareRoleAction(
+  shareId: string,
+  tradeId: string,
+  role: string,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be signed in." };
+  if (!SHARE_ROLES.includes(role as (typeof SHARE_ROLES)[number])) {
+    return { error: "Pick a valid access level." };
+  }
+
+  // RLS (trade_shares_update) restricts this to the trade's owner.
+  const { error } = await supabase
+    .from("trade_shares")
+    .update({ role })
+    .eq("id", shareId);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/trades/${tradeId}`);
+  return { data: undefined };
+}
+
+export async function removeShareAction(
+  shareId: string,
+  tradeId: string,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be signed in." };
+
+  // RLS (trade_shares_delete) restricts this to the trade's owner.
+  const { error } = await supabase
+    .from("trade_shares")
+    .delete()
+    .eq("id", shareId);
   if (error) return { error: error.message };
 
   revalidatePath(`/trades/${tradeId}`);

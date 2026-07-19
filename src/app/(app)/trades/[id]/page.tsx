@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { getUserCurrency } from "@/features/auth/queries";
 import { AiPlaceholderCard } from "@/features/ai/components/ai-placeholder-card";
 import { ScreenshotGallery } from "@/features/trades/components/screenshot-gallery";
+import { ShareTradeDialog } from "@/features/trades/components/share-trade-dialog";
 import { TradeComments } from "@/features/trades/components/trade-comments";
 import { TradeDetailActions } from "@/features/trades/components/trade-detail-actions";
 import { TradePriceChart } from "@/features/trades/components/trade-price-chart";
@@ -22,7 +23,13 @@ import {
   PnlText,
   StatusBadge,
 } from "@/features/trades/components/trade-badges";
-import { getTradeById, getTradeComments } from "@/features/trades/queries";
+import {
+  getCurrentUserId,
+  getTradeAccess,
+  getTradeById,
+  getTradeComments,
+  getTradeShares,
+} from "@/features/trades/queries";
 import {
   formatRiskReward,
   plannedRiskReward,
@@ -59,13 +66,30 @@ export default async function TradeDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [trade, currency, comments] = await Promise.all([
+  const [trade, currency, comments, currentUserId] = await Promise.all([
     getTradeById(id),
     getUserCurrency(),
     getTradeComments(id),
+    getCurrentUserId(),
   ]);
 
   if (!trade) notFound();
+
+  const access = await getTradeAccess(trade);
+  const shares = access.isOwner ? await getTradeShares(trade.id) : [];
+  const canEdit = access.role === "owner" || access.role === "editor";
+  const canComment =
+    access.role === "owner" ||
+    access.role === "editor" ||
+    access.role === "commenter";
+  const roleLabel =
+    access.role === "editor"
+      ? "Can edit"
+      : access.role === "commenter"
+        ? "Can comment"
+        : access.role === "viewer"
+          ? "View only"
+          : null;
 
   // Signed URLs for private screenshots.
   let imageUrls: { url: string; caption: string | null }[] = [];
@@ -127,7 +151,23 @@ export default async function TradeDetailPage({
             </p>
           </div>
         </div>
-        <TradeDetailActions trade={trade} />
+        <div className="flex items-center gap-2">
+          {!access.isOwner && roleLabel && (
+            <Badge variant="secondary" className="whitespace-nowrap">
+              Shared with you · {roleLabel}
+            </Badge>
+          )}
+          {access.isOwner && (
+            <ShareTradeDialog
+              tradeId={trade.id}
+              symbol={trade.symbol}
+              shares={shares}
+            />
+          )}
+          {canEdit && (
+            <TradeDetailActions trade={trade} canDelete={access.isOwner} />
+          )}
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -197,7 +237,13 @@ export default async function TradeDetailPage({
             title="Trade journal"
             description="Log how you feel as the trade plays out."
           >
-            <TradeComments tradeId={trade.id} comments={comments} />
+            <TradeComments
+              tradeId={trade.id}
+              comments={comments}
+              canComment={canComment}
+              isOwner={access.isOwner}
+              currentUserId={currentUserId}
+            />
           </SectionCard>
         </div>
 
