@@ -26,6 +26,9 @@ export type TradeUpdate = TablesUpdate<"trades">;
 
 export type TradeImage = Tables<"trade_images">;
 
+export type TradeComment = Tables<"trade_comments">;
+export type TradeCommentInsert = TablesInsert<"trade_comments">;
+
 export type Note = Tables<"notes">;
 export type NoteInsert = TablesInsert<"notes">;
 

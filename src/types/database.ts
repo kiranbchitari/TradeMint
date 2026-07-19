@@ -421,6 +421,41 @@ export type Database = {
         }
         Relationships: []
       }
+      trade_comments: {
+        Row: {
+          body: string
+          created_at: string
+          emotion: string | null
+          id: string
+          trade_id: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          emotion?: string | null
+          id?: string
+          trade_id: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          emotion?: string | null
+          id?: string
+          trade_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_comments_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trade_images: {
         Row: {
           caption: string | null

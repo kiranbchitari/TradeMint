@@ -95,6 +95,16 @@ export const bulkGradeSchema = z.object({
   grade: z.enum(GRADES),
 });
 
+export const tradeCommentSchema = z.object({
+  body: z
+    .string()
+    .trim()
+    .min(1, "Write something first.")
+    .max(4000, "Comment is too long."),
+  emotion: z.enum(EMOTIONS).nullish(),
+});
+export type TradeCommentInput = z.infer<typeof tradeCommentSchema>;
+
 // Broker/CSV exports carry formatted numbers ("1,200.50", "$95", " 3 ").
 // Strip currency/grouping noise before coercion so real values aren't dropped.
 const cleanNumeric = (v: unknown) => {

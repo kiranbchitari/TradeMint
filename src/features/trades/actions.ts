@@ -12,6 +12,7 @@ import type { TradeInsert } from "@/types/models";
 import {
   bulkGradeSchema,
   importRowSchema,
+  tradeCommentSchema,
   tradeFormSchema,
   tradeImageInputSchema,
   type TradeFormOutput,
@@ -285,6 +286,53 @@ export async function bulkDeleteTradesAction(
   if (error) return { error: error.message };
 
   revalidateTradeViews();
+  return { data: undefined };
+}
+
+export async function addTradeCommentAction(
+  tradeId: string,
+  input: unknown,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be signed in." };
+
+  const parsed = tradeCommentSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid comment." };
+  }
+
+  const { error } = await supabase.from("trade_comments").insert({
+    user_id: user.id,
+    trade_id: tradeId,
+    body: parsed.data.body,
+    emotion: parsed.data.emotion ?? null,
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath(`/trades/${tradeId}`);
+  return { data: undefined };
+}
+
+export async function deleteTradeCommentAction(
+  commentId: string,
+  tradeId: string,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be signed in." };
+
+  const { error } = await supabase
+    .from("trade_comments")
+    .delete()
+    .eq("id", commentId);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/trades/${tradeId}`);
   return { data: undefined };
 }
 

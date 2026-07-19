@@ -3,6 +3,7 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type {
   Trade,
+  TradeComment,
   TradeImage,
   TradeWithRelations,
 } from "@/types/models";
@@ -97,4 +98,22 @@ export async function getTradeById(
     .maybeSingle();
   if (error) throw error;
   return data ? mapTrade(data as unknown as RawTradeRow) : null;
+}
+
+/**
+ * A trade's commentary feed, oldest first so it reads as a timeline. Kept out
+ * of the shared RELATIONS join so list views (which page over every trade)
+ * stay lean — the detail page fetches this on demand. RLS scopes to the user.
+ */
+export async function getTradeComments(
+  tradeId: string,
+): Promise<TradeComment[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("trade_comments")
+    .select("*")
+    .eq("trade_id", tradeId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
 }

@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { getUserCurrency } from "@/features/auth/queries";
 import { AiPlaceholderCard } from "@/features/ai/components/ai-placeholder-card";
 import { ScreenshotGallery } from "@/features/trades/components/screenshot-gallery";
+import { TradeComments } from "@/features/trades/components/trade-comments";
 import { TradeDetailActions } from "@/features/trades/components/trade-detail-actions";
 import { TradePriceChart } from "@/features/trades/components/trade-price-chart";
 import {
@@ -21,7 +22,7 @@ import {
   PnlText,
   StatusBadge,
 } from "@/features/trades/components/trade-badges";
-import { getTradeById } from "@/features/trades/queries";
+import { getTradeById, getTradeComments } from "@/features/trades/queries";
 import {
   formatRiskReward,
   plannedRiskReward,
@@ -58,9 +59,10 @@ export default async function TradeDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [trade, currency] = await Promise.all([
+  const [trade, currency, comments] = await Promise.all([
     getTradeById(id),
     getUserCurrency(),
+    getTradeComments(id),
   ]);
 
   if (!trade) notFound();
@@ -189,6 +191,13 @@ export default async function TradeDetailPage({
                 </div>
               )}
             </div>
+          </SectionCard>
+
+          <SectionCard
+            title="Trade journal"
+            description="Log how you feel as the trade plays out."
+          >
+            <TradeComments tradeId={trade.id} comments={comments} />
           </SectionCard>
         </div>
 
