@@ -48,11 +48,22 @@ export type TradeMetricsInput = {
   /**
    * Platform spread in the instrument's price units (0.50 = 50 cents on gold,
    * 15 = $15 on BTC), not in fractional pips.
+   *
+   * Pass 0 when `entryPrice`/`exitPrice` are real fills — a buy fills at the ask
+   * and exits at the bid, so the spread is already baked into those prices and
+   * charging it here as well double-counts it. Supply it only when the prices
+   * are mid/quoted, where the round turn costs one spread.
    */
   spreadPoints?: number;
-  /** Fixed fee per standard round lot, in account currency. */
+  /**
+   * Commission per lot, in account currency. Multiplied by `lotSize` and taken
+   * at face value — whatever the caller reports is what gets charged.
+   */
   commissionPerLot?: number;
-  /** Total overnight holding fee. Treated as a cost; the sign is ignored. */
+  /**
+   * Overnight holding fee, signed: positive is charged, negative is credited
+   * (positive carry). Passed straight through to the fee total.
+   */
   swapFee?: number;
 };
 
@@ -61,7 +72,7 @@ export type TradeMetrics = {
   requiredMargin: number | null;
   /** Price move × contract value, before fees. */
   grossPnL: number;
-  /** Spread + commission + swap. */
+  /** Spread + commission + swap. Negative when a swap credit exceeds the costs. */
   totalFees: number;
   /** Gross P&L less fees — what actually hits the account. */
   netPnL: number;
@@ -127,12 +138,13 @@ export function calculateTradeMetrics(input: TradeMetricsInput): TradeMetrics {
 
   const grossPnL = (exitPrice - entryPrice) * contractValue * directionModifier;
 
-  // Friction: crossing the spread costs the same on any size, commission scales
-  // per lot, swap is whatever the broker charged for holding overnight.
+  // Friction: the spread scales with contract value, commission with lots, and
+  // swap is whatever the broker settled — signed, so positive carry credits back
+  // instead of being charged twice.
+  // A spread is a width, so its sign is meaningless — everything else is the
+  // caller's reported figure, used as given.
   const totalFees =
-    Math.abs(spreadPoints) * contractValue +
-    Math.abs(commissionPerLot) * lotSize +
-    Math.abs(swapFee);
+    Math.abs(spreadPoints) * contractValue + commissionPerLot * lotSize + swapFee;
 
   return {
     requiredMargin: requiredMargin == null ? null : round2(requiredMargin),
